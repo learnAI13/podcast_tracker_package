@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>1-Click Podcast Guest Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .recommendation {
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .RECOMMENDED {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .CONSIDER {
+            background-color: #fcf8e3;
+            color: #8a6d3b;
+        }
+        .NOT_RECOMMENDED {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .explanation {
+            margin-top: 20px;
+        }
+        .explanation h3 {
+            margin-bottom: 10px;
+        }
+        .explanation ul {
+            margin-top: 0;
+        }
+        .loading {
+            text-align: center;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>1-Click Podcast Guest Tracker</h1>
+    
+    <form id="analyzeForm" action="/analyze" method="post">
+        <div class="form-group">
+            <label for="guest_name">Guest Name:</label>
+            <input type="text" id="guest_name" name="guest_name" required placeholder="e.g., Elon Musk">
+        </div>
+        
+        <div class="form-group">
+            <label for="guest_url">Guest URL (Twitter, LinkedIn, etc.):</label>
+            <input type="text" id="guest_url" name="guest_url" required placeholder="e.g., https://twitter.com/elonmusk">
+        </div>
+        
+        <div class="form-group">
+            <label for="host_channel">Host YouTube Channel:</label>
+            <input type="text" id="host_channel" name="host_channel" required placeholder="e.g., https://youtube.com/@lexfridman">
+        </div>
+        
+        <button type="submit">Analyze Guest</button>
+    </form>
+    
+    <div id="loading" class="loading">
+        <p>Analyzing guest... This may take a minute.</p>
+        <div class="spinner"></div>
+    </div>
+    
+    <div id="results" class="results" style="display: none;">
+        <div id="score" class="score"></div>
+        <div id="recommendation" class="recommendation"></div>
+        
+        <div class="explanation">
+            <h3>Explanation:</h3>
+            <ul id="explanation_points"></ul>
+        </div>
+        
+        <div class="guest-profile">
+            <h3>Guest Profile:</h3>
+            <pre id="guest_profile" style="white-space: pre-wrap;"></pre>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('analyzeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading spinner
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            // Get form data
+            const formData = new FormData(this);
+            
+            // Send request
+            fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading spinner
+                document.getElementById('loading').style.display = 'none';
+                
+                // Show results
+                document.getElementById('results').style.display = 'block';
+                
+                // Update results
+                document.getElementById('score').textContent = `Score: ${data.recommendation_summary.overall_score}/100`;
+                
+                const recElem = document.getElementById('recommendation');
+                recElem.textContent = `Recommendation: ${data.recommendation_summary.recommendation}`;
+                recElem.className = `recommendation ${data.recommendation_summary.recommendation}`;
+                
+                // Update explanation points
+                const explanationList = document.getElementById('explanation_points');
+                explanationList.innerHTML = '';
+                data.recommendation_summary.explanation_points.forEach(point => {
+                    const li = document.createElement('li');
+                    li.textContent = point;
+                    explanationList.appendChild(li);
+                });
+                
+                // Update guest profile
+                document.getElementById('guest_profile').textContent = 
+                    JSON.stringify(data.guest_profile, null, 2);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                alert('An error occurred during analysis. Please try again.');
+            });
+        });
+    </script>
+</body>
+</html>
+    
